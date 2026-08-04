@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARNAV — Interaction Design Student</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fafafa;
+    --ink:#0e0e11;
+    --dim:#88888f;
+    --line:#e3e3e8;
+    --accent:#3341ff;
+    --accent-tint:#edeeff;
+    --font-display:'Space Grotesk', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --ease:cubic-bezier(.16,.8,.24,1);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  ::selection{ background:var(--accent); color:#fff; }
+
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--font-display);
+    overflow-x:hidden;
+  }
+
+  a{ color:inherit; text-decoration:none; }
+
+  /* ---------- spec readout (signature element) ---------- */
+  .spec{
+    position:fixed; top:0; left:0; z-index:9999; pointer-events:none;
+    font-family:var(--font-mono); font-size:.68rem; letter-spacing:.02em;
+    background:var(--ink); color:#fff; padding:.35em .65em; border-radius:3px;
+    opacity:0; transform:translate(-50%, 14px) scale(.9);
+    transition:opacity .18s var(--ease), transform .18s var(--ease);
+    white-space:nowrap;
+  }
+  .spec.show{ opacity:1; transform:translate(-50%, 20px) scale(1); }
+  .spec::before{
+    content:''; position:absolute; top:-4px; left:50%; transform:translateX(-50%);
+    border-left:4px solid transparent; border-right:4px solid transparent;
+    border-bottom:4px solid var(--ink);
+  }
+
+  /* ---------- nav ---------- */
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:500;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.6rem 5vw; background:rgba(250,250,250,0.85); backdrop-filter:blur(8px);
+    border-bottom:1px solid transparent;
+  }
+  .logo{ font-weight:700; font-size:1rem; letter-spacing:-.01em; }
+
+  nav ul{ list-style:none; display:flex; gap:2.4rem; }
+  nav a{
+    font-family:var(--font-mono); font-size:.72rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--dim); position:relative;
+    padding-bottom:2px;
+  }
+  nav a::after{
+    content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:var(--ink);
+    transition:width .3s var(--ease);
+  }
+  nav a:hover{ color:var(--ink); }
+  nav a:hover::after{ width:100%; }
+
+  /* ---------- hero ---------- */
+  .hero{
+    min-height:100vh; display:flex; flex-direction:column; justify-content:center;
+    padding:0 5vw;
+  }
+  .hero-top{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    margin-bottom:2.4rem; flex-wrap:wrap; gap:1rem;
+  }
+  .hero-role{
+    font-family:var(--font-mono); font-size:.72rem; letter-spacing:.1em;
+    color:var(--dim); text-transform:uppercase; padding-top:.6rem;
+  }
+  .hero-role span{ color:var(--accent); }
+
+  .hero h1{
+    font-weight:700; letter-spacing:-.03em; line-height:.92;
+    font-size:clamp(3.4rem, 12vw, 9rem);
+  }
+  .hero h1 em{
+    font-style:normal; color:var(--accent);
+  }
+
+  .hero-desc{
+    max-width:480px; margin-top:2.2rem; font-size:1rem; line-height:1.7; color:#45454c;
+  }
+
+  .hero-meta{
+    display:flex; gap:3rem; margin-top:3.4rem; flex-wrap:wrap;
+    font-family:var(--font-mono); font-size:.72rem; color:var(--dim);
+  }
+  .hero-meta div b{ display:block; color:var(--ink); font-family:var(--font-display); font-size:1rem; margin-bottom:.2rem; }
+
+  /* ---------- magnetic buttons ---------- */
+  .magnetic{ display:inline-block; position:relative; transition:transform .25s var(--ease); }
+
+  /* ---------- sections ---------- */
+  section{ padding:8rem 5vw; }
+  .section-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:3.4rem; padding-bottom:1.2rem; border-bottom:1px solid var(--line);
+    flex-wrap:wrap; gap:.6rem;
+  }
+  .section-head h2{ font-size:clamp(1.6rem,4vw,2.2rem); font-weight:600; letter-spacing:-.02em; }
+  .section-num{ font-family:var(--font-mono); font-size:.72rem; color:var(--dim); letter-spacing:.1em; }
+
+  .reveal{ opacity:0; transform:translateY(28px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  /* ---------- work ---------- */
+  .work-row{
+    display:grid; grid-template-columns:100px 56px 1fr auto; align-items:center;
+    gap:2rem; padding:2rem 0; border-bottom:1px solid var(--line);
+    position:relative; overflow:hidden;
+  }
+  .work-row .cover{
+    width:100px; height:72px; border-radius:6px; overflow:hidden;
+    background:var(--line); position:relative;
+  }
+  .work-row .cover img{
+    width:100%; height:100%; object-fit:cover; object-position:75% center; display:block;
+    transform:scale(1); transition:transform .5s var(--ease);
+  }
+  .work-row .cover::after{
+    content:'View case'; position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(14,14,17,0.55); color:#fff;
+    font-family:var(--font-mono); font-size:.6rem; letter-spacing:.06em;
+    text-transform:uppercase; opacity:0; transition:opacity .3s var(--ease);
+  }
+  .work-row:hover .cover img{ transform:scale(1.12); }
+  .work-row:hover .cover::after{ opacity:1; }
+  .work-row.pressed .cover{ transform:scale(.94); transition:transform .12s var(--ease); }
+  .work-row .n{ font-family:var(--font-mono); font-size:.78rem; color:var(--dim); }
+  .work-row h3{
+    font-size:clamp(1.3rem,3vw,2rem); font-weight:600; letter-spacing:-.02em;
+    transition:transform .4s var(--ease);
+  }
+  .work-row p{ font-family:var(--font-mono); font-size:.72rem; color:var(--dim); margin-top:.4rem; }
+  .work-row .arrow{
+    font-family:var(--font-mono); font-size:1.1rem; color:var(--ink);
+    transform:rotate(0deg) translateX(0); transition:transform .4s var(--ease);
+  }
+  .work-row::before{
+    content:''; position:absolute; inset:0; background:var(--accent-tint);
+    transform:scaleX(0); transform-origin:left; transition:transform .45s var(--ease); z-index:-1;
+  }
+  .work-row:hover::before{ transform:scaleX(1); }
+  .work-row:hover h3{ transform:translateX(10px); }
+  .work-row:hover .arrow{ transform:rotate(45deg) translateX(4px); }
+
+  /* ---------- about ---------- */
+  .about-wrap{ display:grid; grid-template-columns:1.1fr 1fr; gap:5rem; }
+  @media (max-width:860px){ .about-wrap{ grid-template-columns:1fr; gap:3rem; } }
+  .about-wrap p{ font-size:1.05rem; line-height:1.8; color:#3a3a41; }
+  .about-wrap p + p{ margin-top:1.2rem; }
+
+  .principles{ list-style:none; }
+  .principles li{
+    display:grid; grid-template-columns:28px 1fr; gap:1rem;
+    padding:1.1rem 0; border-bottom:1px solid var(--line);
+  }
+  .principles li:first-child{ padding-top:0; }
+  .principles .p-num{ font-family:var(--font-mono); font-size:.75rem; color:var(--accent); }
+  .principles .p-text b{ display:block; font-weight:600; margin-bottom:.25rem; }
+  .principles .p-text span{ font-size:.85rem; color:var(--dim); line-height:1.5; }
+
+  /* ---------- contact ---------- */
+  .contact-email{
+    font-weight:700; letter-spacing:-.03em; font-size:clamp(2.2rem,7vw,5rem);
+    display:inline-block; position:relative;
+  }
+  .contact-email::after{
+    content:''; position:absolute; left:0; bottom:.08em; width:100%; height:2px;
+    background:var(--ink); transform:scaleX(1); transform-origin:right;
+    transition:transform .4s var(--ease);
+  }
+  .contact-email:hover::after{ transform-origin:left; transform:scaleX(0); }
+  .contact-email:hover{ color:var(--accent); }
+
+  .contact-row{
+    display:flex; gap:2.2rem; margin-top:3rem; flex-wrap:wrap;
+    font-family:var(--font-mono); font-size:.75rem; letter-spacing:.05em;
+  }
+  .contact-row a{ color:var(--dim); position:relative; padding-bottom:3px; }
+  .contact-row a::after{
+    content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:var(--ink);
+    transition:width .3s var(--ease);
+  }
+  .contact-row a:hover{ color:var(--ink); }
+  .contact-row a:hover::after{ width:100%; }
+
+  footer{
+    padding:2rem 5vw; display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem;
+    font-family:var(--font-mono); font-size:.68rem; color:var(--dim);
+    border-top:1px solid var(--line);
+  }
+
+  @media (max-width:640px){
+    nav ul{ gap:1.2rem; }
+    .work-row{ grid-template-columns:64px 1fr; gap:1rem; }
+    .work-row .n, .work-row .arrow{ display:none; }
+    .work-row .cover{ width:64px; height:48px; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="spec" id="spec"></div>
+
+<header>
+  <div class="logo">Arnav</div>
+  <nav>
+    <ul>
+      <li><a href="#work">Work</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-top">
+    <div class="hero-role">Interaction Design Student <span>&mdash; still learning</span></div>
+  </div>
+  <h1>Arnav<br>designs <em>how</em><br>it feels.</h1>
+  <p class="hero-desc">I design the moments between action and response — the small mechanics that make software feel considered, honest, and good to use.</p>
+  <div class="hero-meta">
+    <div><b>01</b>Practice projects</div>
+    <div><b>Student</b>Interaction design</div>
+    <div><b>Open</b>For feedback &amp; projects</div>
+  </div>
+</section>
+
+<section id="work">
+  <div class="section-head reveal">
+    <h2>Work</h2>
+    <div class="section-num">01 / SELECTED</div>
+  </div>
+
+  <a href="spotify-redesign.html" class="work-row reveal track" data-spec="view case · redesign" id="spotifyRow">
+    <div class="cover">
+      <img src="spotify-cover.jpg" alt="Spotify Redesign cover">
+    </div>
+    <div class="n">01</div>
+    <div>
+      <h3>Spotify Redesign</h3>
+      <p>Reimagining playback and discovery interactions for a music streaming app</p>
+    </div>
+    <div class="arrow">↗</div>
+  </a>
+</section>
+
+<section id="about">
+  <div class="section-head reveal">
+    <h2>About</h2>
+    <div class="section-num">02 / PROFILE</div>
+  </div>
+  <div class="about-wrap">
+    <div class="reveal">
+      <p>I'm Arnav, an interaction design student learning to think in states, transitions, and timing instead of static screens. Most of what's here is coursework and self-directed practice, not client work — I'm still early, and still figuring a lot of this out.</p>
+      <p>Before a pixel is placed, I try to ask what a person is actually doing — reaching, waiting, deciding — and design the response to match. Most of my learning happens in prototypes, not documents.</p>
+    </div>
+    <ul class="principles reveal">
+      <li>
+        <div class="p-num">01</div>
+        <div class="p-text"><b>Motion has meaning</b><span>Every transition explains a change in state — nothing moves without a reason.</span></div>
+      </li>
+      <li>
+        <div class="p-num">02</div>
+        <div class="p-text"><b>Feedback is immediate</b><span>Every action gets a response within a frame people can trust.</span></div>
+      </li>
+      <li>
+        <div class="p-num">03</div>
+        <div class="p-text"><b>Restraint is a decision</b><span>The best interaction is often the one you don't notice at all.</span></div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="section-head reveal">
+    <h2>Contact</h2>
+    <div class="section-num">03 / REACH OUT</div>
+  </div>
+  <div class="reveal">
+    <a href="mailto:arnav.dubey44@gmail.com" class="contact-email track" data-spec="mailto · click to send">arnav.dubey44@gmail.com</a>
+    <div class="contact-row">
+      <a href="mailto:arnav.dubey44@gmail.com" class="track" data-spec="mailto · click to send">Email</a>
+      <a href="https://www.linkedin.com/in/arnav-dubey-30b309415/" target="_blank" rel="noopener" class="track" data-spec="opens in new tab">LinkedIn</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>© 2026 Arnav — Interaction Design Student</div>
+  <div>Still learning, still shipping</div>
+</footer>
+
+<script>
+  // spec readout follows cursor near interactive elements
+  const spec = document.getElementById('spec');
+  document.querySelectorAll('.track').forEach(el=>{
+    el.addEventListener('mousemove', e=>{
+      spec.style.left = e.clientX + 'px';
+      spec.style.top = e.clientY + 'px';
+    });
+    el.addEventListener('mouseenter', ()=>{
+      spec.textContent = el.dataset.spec || 'interactive · 240ms ease';
+      spec.classList.add('show');
+    });
+    el.addEventListener('mouseleave', ()=> spec.classList.remove('show'));
+  });
+
+  // click-press animation on the project cover, then navigate to the case study
+  const spotifyRow = document.getElementById('spotifyRow');
+  if (spotifyRow) {
+    spotifyRow.addEventListener('click', (e) => {
+      e.preventDefault();
+      spotifyRow.classList.add('pressed');
+      setTimeout(() => {
+        window.location.href = spotifyRow.href;
+      }, 140);
+    });
+  }
+
+  // magnetic pull for nav links and buttons
+  document.querySelectorAll('nav a, .contact-email').forEach(el=>{
+    el.classList.add('magnetic');
+    el.addEventListener('mousemove', e=>{
+      const r = el.getBoundingClientRect();
+      const x = e.clientX - r.left - r.width/2;
+      const y = e.clientY - r.top - r.height/2;
+      el.style.transform = `translate(${x*0.18}px, ${y*0.35}px)`;
+    });
+    el.addEventListener('mouseleave', ()=>{ el.style.transform='translate(0,0)'; });
+  });
+
+  // scroll reveal, defaults visible if JS is slow/blocked
+  const revealEls = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){ entry.target.classList.add('in'); io.unobserve(entry.target); }
+      });
+    }, { threshold:0.12 });
+    revealEls.forEach(el=>io.observe(el));
+  } else {
+    revealEls.forEach(el=>el.classList.add('in'));
+  }
+
+  // header border on scroll
+  const header = document.querySelector('header');
+  window.addEventListener('scroll', ()=>{
+    header.style.borderBottomColor = window.scrollY > 40 ? '#e3e3e8' : 'transparent';
+  });
+</script>
+
+</body>
+</html>
