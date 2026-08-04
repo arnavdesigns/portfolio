@@ -299,9 +299,9 @@
     <div class="section-num">03 / REACH OUT</div>
   </div>
   <div class="reveal">
-    <a href="mailto:arnav.dubey44@gmail.com" class="contact-email track" data-spec="mailto · click to send">arnav.dubey44@gmail.com</a>
+    <a href="mailto:arnav.dubey44@gmail.com" class="contact-email track" data-spec="click to copy" id="emailBig">arnav.dubey44@gmail.com</a>
     <div class="contact-row">
-      <a href="mailto:arnav.dubey44@gmail.com" class="track" data-spec="mailto · click to send">Email</a>
+      <a href="mailto:arnav.dubey44@gmail.com" class="track" data-spec="click to copy" id="emailSmall">Email</a>
       <a href="https://www.linkedin.com/in/arnav-dubey-30b309415/" target="_blank" rel="noopener" class="track" data-spec="opens in new tab">LinkedIn</a>
     </div>
   </div>
@@ -315,6 +315,29 @@
 <script>
   // spec readout follows cursor near interactive elements
   const spec = document.getElementById('spec');
+
+  // click-to-copy email (mailto often does nothing if no mail app is set up)
+  function wireCopyEmail(el){
+    if(!el) return;
+    el.addEventListener('click', (e)=>{
+      e.preventDefault();
+      const email = 'arnav.dubey44@gmail.com';
+      navigator.clipboard.writeText(email).then(()=>{
+        const original = el.textContent;
+        spec.textContent = 'copied ✓';
+        spec.classList.add('show');
+        el.textContent = 'Copied!';
+        setTimeout(()=>{
+          el.textContent = original;
+          spec.classList.remove('show');
+        }, 1300);
+      }).catch(()=>{
+        window.location.href = 'mailto:' + email;
+      });
+    });
+  }
+  wireCopyEmail(document.getElementById('emailBig'));
+  wireCopyEmail(document.getElementById('emailSmall'));
   document.querySelectorAll('.track').forEach(el=>{
     el.addEventListener('mousemove', e=>{
       spec.style.left = e.clientX + 'px';
