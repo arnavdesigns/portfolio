@@ -241,7 +241,7 @@
   <h1>Small interactions.<br><em>Real intent.</em></h1>
   <p class="hero-desc">I design the moments between action and response — the small mechanics that make software feel considered, honest, and good to use.</p>
   <div class="hero-meta">
-    <div><b>01</b>Practice projects</div>
+    <div><b>02</b>Practice projects</div>
     <div><b>Student</b>Interaction design</div>
     <div><b>Open</b>For feedback &amp; projects</div>
   </div>
@@ -261,6 +261,18 @@
     <div>
       <h3>Spotify Redesign</h3>
       <p>Reimagining playback and discovery interactions for a music streaming app</p>
+    </div>
+    <div class="arrow">↗</div>
+  </a>
+
+  <a href="music-visualizer-case-study.html" class="work-row reveal track" data-spec="view case · interactive" id="sonicRow">
+    <div class="cover">
+      <img src="visualizer-cover.png" alt="Sonic music visualizer cover">
+    </div>
+    <div class="n">02</div>
+    <div>
+      <h3>Sonic — Music Visualizer</h3>
+      <p>An interactive, audio-reactive visualizer built with the Web Audio API and Canvas</p>
     </div>
     <div class="arrow">↗</div>
   </a>
@@ -358,6 +370,17 @@
       spotifyRow.classList.add('pressed');
       setTimeout(() => {
         window.location.href = spotifyRow.href;
+      }, 140);
+    });
+  }
+
+  const sonicRow = document.getElementById('sonicRow');
+  if (sonicRow) {
+    sonicRow.addEventListener('click', (e) => {
+      e.preventDefault();
+      sonicRow.classList.add('pressed');
+      setTimeout(() => {
+        window.location.href = sonicRow.href;
       }, 140);
     });
   }
