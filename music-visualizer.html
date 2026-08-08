@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sonic — Music Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#08080a;
+    --panel:#111114;
+    --bezel:#1a1a1f;
+    --line:#232328;
+    --text:#f5f5f7;
+    --dim:#87878f;
+    --dim2:#4d4d54;
+    --ease:cubic-bezier(.16,.8,.24,1);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    overflow-x:hidden;
+  }
+
+  a{ color:inherit; text-decoration:none; }
+
+  /* ---------- header ---------- */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.4rem 5vw; border-bottom:1px solid var(--line);
+  }
+  .back-link{
+    font-size:.72rem; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--dim); position:relative; padding-bottom:2px;
+  }
+  .back-link::after{
+    content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:var(--text);
+    transition:width .3s var(--ease);
+  }
+  .back-link:hover{ color:var(--text); }
+  .back-link:hover::after{ width:100%; }
+
+  .title-block{ text-align:right; }
+  .title-block h1{
+    font-size:.95rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  }
+  .title-block span{ font-size:.62rem; color:var(--dim); letter-spacing:.1em; }
+
+  /* ---------- main console ---------- */
+  main{
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    padding:2.4rem 5vw 3rem; gap:1.6rem;
+  }
+
+  /* ---------- mode tabs ---------- */
+  .tabs{
+    display:flex; gap:.5rem; padding:.4rem; background:var(--panel);
+    border:1px solid var(--line); border-radius:10px;
+  }
+  .tab{
+    font-family:'IBM Plex Mono', monospace; font-size:.72rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--dim); background:transparent; border:none;
+    padding:.7em 1.3em; border-radius:7px; cursor:pointer;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+  .tab:hover{ color:var(--text); }
+  .tab.active{ background:var(--bezel); color:var(--text); }
+
+  /* ---------- screen / bezel ---------- */
+  .screen-wrap{
+    width:100%; max-width:1100px;
+    background:var(--bezel); border:1px solid var(--line); border-radius:16px;
+    padding:14px; position:relative;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,0.6);
+  }
+  .screen{
+    position:relative; width:100%; aspect-ratio:16/9; border-radius:9px; overflow:hidden;
+    background:#000;
+  }
+  .screen canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  .drop-overlay{
+    position:absolute; inset:0; z-index:10;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:1rem; text-align:center; padding:2rem;
+    background:rgba(0,0,0,0.35); backdrop-filter:blur(2px);
+    transition:opacity .4s var(--ease);
+    cursor:pointer;
+  }
+  .drop-overlay.hidden{ opacity:0; pointer-events:none; }
+  .drop-overlay.dragging{ background:rgba(0,0,0,0.55); }
+  .drop-icon{
+    width:52px; height:52px; border:1px solid rgba(255,255,255,0.4); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:1.2rem;
+  }
+  .drop-overlay h2{ font-size:.95rem; font-weight:600; letter-spacing:.02em; }
+  .drop-overlay p{ font-size:.72rem; color:#c7c7cc; max-width:280px; line-height:1.6; }
+  .drop-overlay input{ display:none; }
+
+  .screen-tag{
+    position:absolute; top:14px; left:14px; z-index:5;
+    font-size:.62rem; letter-spacing:.12em; color:rgba(255,255,255,0.55);
+    text-transform:uppercase; pointer-events:none;
+    display:flex; align-items:center; gap:.5em;
+  }
+  .rec-dot{
+    width:6px; height:6px; border-radius:50%; background:#ff4747;
+    box-shadow:0 0 8px #ff4747; opacity:0; transition:opacity .3s var(--ease);
+  }
+  .rec-dot.live{ opacity:1; animation:blink 1.4s infinite; }
+  @keyframes blink{ 50%{ opacity:.25; } }
+
+  /* ---------- transport ---------- */
+  .transport{
+    width:100%; max-width:1100px;
+    display:flex; align-items:center; gap:1.4rem;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:1rem 1.4rem; flex-wrap:wrap;
+  }
+  .play-btn{
+    width:38px; height:38px; border-radius:50%; border:1px solid var(--line);
+    background:var(--bezel); color:var(--text); font-size:.85rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:transform .2s var(--ease), background .2s var(--ease);
+  }
+  .play-btn:hover{ background:#202027; }
+  .play-btn:active{ transform:scale(.92); }
+
+  .track-info{ flex:1; min-width:140px; }
+  .track-name{ font-size:.78rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .track-sub{ font-size:.62rem; color:var(--dim); margin-top:.2rem; }
+
+  .vol-wrap{ display:flex; align-items:center; gap:.6rem; }
+  .vol-wrap span{ font-size:.65rem; color:var(--dim); }
+  input[type="range"]{
+    -webkit-appearance:none; width:90px; height:2px; background:var(--line); border-radius:2px; outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:11px; height:11px; border-radius:50%;
+    background:var(--text); cursor:pointer;
+  }
+
+  .swap-btn{
+    font-size:.68rem; letter-spacing:.05em; color:var(--dim);
+    border:1px solid var(--line); border-radius:7px; padding:.55em 1em;
+    background:transparent; cursor:pointer; transition:color .2s var(--ease), border-color .2s var(--ease);
+    flex-shrink:0;
+  }
+  .swap-btn:hover{ color:var(--text); border-color:var(--dim2); }
+
+  footer{
+    padding:1.6rem 5vw; text-align:center; font-size:.64rem; color:var(--dim2);
+    border-top:1px solid var(--line); letter-spacing:.05em;
+  }
+
+  @media (max-width:640px){
+    header{ flex-direction:column; align-items:flex-start; gap:.6rem; }
+    .title-block{ text-align:left; }
+    .tabs{ width:100%; overflow-x:auto; }
+    .transport{ gap:.8rem; }
+    .vol-wrap{ order:3; width:100%; }
+    input[type="range"]{ flex:1; width:auto; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index-minimal.html" class="back-link">← Back to work</a>
+  <div class="title-block">
+    <h1>Sonic</h1>
+    <span>Interactive Music Visualizer</span>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab active" data-mode="bars">Bars</button>
+    <button class="tab" data-mode="radial">Radial Waveform</button>
+    <button class="tab" data-mode="particles">Particle Field</button>
+  </div>
+
+  <div class="screen-wrap">
+    <div class="screen">
+      <canvas id="canvas"></canvas>
+      <div class="screen-tag"><span class="rec-dot" id="recDot"></span><span id="modeLabel">Bars — idle</span></div>
+      <div class="drop-overlay" id="dropOverlay">
+        <div class="drop-icon">♫</div>
+        <h2>Drop a track, or click to browse</h2>
+        <p>Runs entirely in your browser — nothing is uploaded anywhere. Try any mp3, wav, or m4a file.</p>
+        <input type="file" id="fileInput" accept="audio/*">
+      </div>
+    </div>
+  </div>
+
+  <div class="transport">
+    <button class="play-btn" id="playBtn">▶</button>
+    <div class="track-info">
+      <div class="track-name" id="trackName">No track loaded</div>
+      <div class="track-sub" id="trackSub">Idle demo signal running</div>
+    </div>
+    <div class="vol-wrap">
+      <span>VOL</span>
+      <input type="range" id="volSlider" min="0" max="1" step="0.01" value="0.8">
+    </div>
+    <button class="swap-btn" id="swapBtn">Load another track</button>
+  </div>
+</main>
+
+<footer>Built with the Web Audio API + Canvas — no server, no upload, all client-side.</footer>
+
+<audio id="audioEl" crossorigin="anonymous"></audio>
+
+<script>
+(function(){
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const dropOverlay = document.getElementById('dropOverlay');
+  const fileInput = document.getElementById('fileInput');
+  const audioEl = document.getElementById('audioEl');
+  const playBtn = document.getElementById('playBtn');
+  const trackName = document.getElementById('trackName');
+  const trackSub = document.getElementById('trackSub');
+  const volSlider = document.getElementById('volSlider');
+  const swapBtn = document.getElementById('swapBtn');
+  const modeLabel = document.getElementById('modeLabel');
+  const recDot = document.getElementById('recDot');
+  const tabs = document.querySelectorAll('.tab');
+
+  let mode = 'bars';
+  let audioCtx, analyser, source;
+  let freqData, timeData;
+  let hasAudio = false;
+  let isPlaying = false;
+  let t = 0;
+
+  // ---------- canvas sizing ----------
+  function resize(){
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------- mode switching ----------
+  tabs.forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      tab.classList.add('active');
+      mode = tab.dataset.mode;
+      updateLabel();
+    });
+  });
+  function updateLabel(){
+    const names = { bars:'Bars', radial:'Radial Waveform', particles:'Particle Field' };
+    modeLabel.textContent = names[mode] + (hasAudio ? (isPlaying ? ' — live' : ' — paused') : ' — idle');
+    recDot.classList.toggle('live', hasAudio && isPlaying);
+  }
+
+  // ---------- file loading ----------
+  function loadFile(file){
+    if(!file) return;
+    const url = URL.createObjectURL(file);
+    audioEl.src = url;
+    trackName.textContent = file.name.replace(/\.[^/.]+$/, '');
+    trackSub.textContent = 'Ready';
+    hasAudio = true;
+
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      source = audioCtx.createMediaElementSource(audioEl);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.82;
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      freqData = new Uint8Array(analyser.frequencyBinCount);
+      timeData = new Uint8Array(analyser.fftSize);
+    }
+
+    audioCtx.resume();
+    audioEl.play();
+    dropOverlay.classList.add('hidden');
+  }
+
+  fileInput.addEventListener('change', e=> loadFile(e.target.files[0]));
+  dropOverlay.addEventListener('click', ()=> fileInput.click());
+  ['dragover','dragenter'].forEach(ev=>{
+    dropOverlay.addEventListener(ev, e=>{ e.preventDefault(); dropOverlay.classList.add('dragging'); });
+  });
+  ['dragleave','drop'].forEach(ev=>{
+    dropOverlay.addEventListener(ev, e=>{ e.preventDefault(); dropOverlay.classList.remove('dragging'); });
+  });
+  dropOverlay.addEventListener('drop', e=>{
+    const file = e.dataTransfer.files[0];
+    if(file) loadFile(file);
+  });
+
+  swapBtn.addEventListener('click', ()=>{
+    audioEl.pause();
+    isPlaying = false;
+    hasAudio = false;
+    dropOverlay.classList.remove('hidden');
+    trackName.textContent = 'No track loaded';
+    trackSub.textContent = 'Idle demo signal running';
+    playBtn.textContent = '▶';
+    updateLabel();
+  });
+
+  playBtn.addEventListener('click', ()=>{
+    if(!hasAudio){ fileInput.click(); return; }
+    if(audioEl.paused){ audioEl.play(); } else { audioEl.pause(); }
+  });
+  audioEl.addEventListener('play', ()=>{ isPlaying = true; playBtn.textContent = '❚❚'; updateLabel(); });
+  audioEl.addEventListener('pause', ()=>{ isPlaying = false; playBtn.textContent = '▶'; updateLabel(); });
+  audioEl.addEventListener('ended', ()=>{ isPlaying = false; playBtn.textContent = '▶'; updateLabel(); });
+
+  volSlider.addEventListener('input', ()=>{ audioEl.volume = parseFloat(volSlider.value); });
+  audioEl.volume = 0.8;
+
+  // ---------- synthetic idle data (when no track is loaded) ----------
+  function synthArrays(time){
+    const fBins = 128;
+    const tBins = 512;
+    if(!freqData || freqData.length !== fBins) freqData = new Uint8Array(fBins);
+    if(!timeData || timeData.length !== tBins) timeData = new Uint8Array(tBins);
+    for(let i=0;i<fBins;i++){
+      const base = Math.sin(i*0.15 + time*0.0016) * 0.5 + 0.5;
+      const pulse = Math.sin(time*0.0025) * 0.5 + 0.5;
+      freqData[i] = Math.max(0, Math.min(255, (base*0.7 + pulse*0.3) * 190 * (1 - i/fBins*0.4)));
+    }
+    for(let i=0;i<tBins;i++){
+      timeData[i] = 128 + Math.sin(i*0.05 + time*0.003) * 40 * (Math.sin(time*0.0012)*0.5+0.6);
+    }
+  }
+
+  // ---------- particle system state ----------
+  let particles = [];
+  function initParticles(w,h){
+    particles = [];
+    const count = 140;
+    for(let i=0;i<count;i++){
+      particles.push({
+        x: Math.random()*w, y: Math.random()*h,
+        vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3,
+        r: 1 + Math.random()*2, seed: Math.random()*1000
+      });
+    }
+  }
+
+  // ---------- draw: bars ----------
+  function drawBars(w,h){
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(0,0,w,h);
+    const bins = 64;
+    const step = Math.floor(freqData.length / bins);
+    const barW = w / bins;
+    let avg = 0;
+    for(let i=0;i<bins;i++){
+      const v = freqData[i*step] / 255;
+      avg += v;
+      const barH = v * h * 0.85;
+      const hue = (t*0.02 + i*4 + v*80) % 360;
+      const grad = ctx.createLinearGradient(0, h-barH, 0, h);
+      grad.addColorStop(0, `hsla(${hue},95%,62%,0.95)`);
+      grad.addColorStop(1, `hsla(${hue},95%,45%,0.15)`);
+      ctx.fillStyle = grad;
+      const x = i*barW + barW*0.15;
+      const bw = barW*0.7;
+      ctx.fillRect(x, h-barH, bw, barH);
+    }
+  }
+
+  // ---------- draw: radial waveform ----------
+  function drawRadial(w,h){
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(0,0,w,h);
+    const cx = w/2, cy = h/2;
+    const baseR = Math.min(w,h) * 0.22;
+    const n = timeData.length;
+    let energy = 0;
+
+    ctx.beginPath();
+    for(let i=0;i<=n;i++){
+      const idx = i % n;
+      const v = (timeData[idx]-128)/128;
+      energy += Math.abs(v);
+      const r = baseR + v * baseR * 0.9;
+      const angle = (i/n) * Math.PI*2 - Math.PI/2;
+      const x = cx + Math.cos(angle)*r;
+      const y = cy + Math.sin(angle)*r;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    const hue = (t*0.03 + energy*2) % 360;
+    ctx.strokeStyle = `hsla(${hue},92%,62%,0.9)`;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = `hsla(${hue},95%,55%,0.8)`;
+    ctx.shadowBlur = 18;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseR*0.55, 0, Math.PI*2);
+    ctx.strokeStyle = `hsla(${(hue+40)%360},80%,60%,0.35)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // ---------- draw: particle field ----------
+  function drawParticles(w,h){
+    if(particles.length===0 || particles._w!==w || particles._h!==h){
+      initParticles(w,h);
+      particles._w = w; particles._h = h;
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.fillRect(0,0,w,h);
+
+    let bass = 0, treble = 0;
+    const half = Math.floor(freqData.length/2);
+    for(let i=0;i<half;i++) bass += freqData[i];
+    for(let i=half;i<freqData.length;i++) treble += freqData[i];
+    bass = bass/half/255;
+    treble = treble/(freqData.length-half)/255;
+
+    const cx = w/2, cy = h/2;
+    particles.forEach((p,i)=>{
+      const pull = (bass*1.6);
+      const dx = cx - p.x, dy = cy - p.y;
+      const dist = Math.hypot(dx,dy) || 1;
+      p.vx += (dx/dist) * pull * 0.02 * (Math.sin(p.seed+t*0.001)>0?1:-0.4);
+      p.vy += (dy/dist) * pull * 0.02 * (Math.sin(p.seed+t*0.001)>0?1:-0.4);
+      p.vx *= 0.96; p.vy *= 0.96;
+      p.x += p.vx + Math.sin(t*0.0015+p.seed)*0.4;
+      p.y += p.vy + Math.cos(t*0.0015+p.seed)*0.4;
+
+      if(p.x<0) p.x=w; if(p.x>w) p.x=0;
+      if(p.y<0) p.y=h; if(p.y>h) p.y=0;
+
+      const hue = (t*0.04 + i*2.4 + treble*120) % 360;
+      const size = p.r + treble*4 + bass*2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size, 0, Math.PI*2);
+      ctx.fillStyle = `hsla(${hue},90%,65%,${0.55+bass*0.4})`;
+      ctx.shadowColor = `hsla(${hue},95%,60%,0.9)`;
+      ctx.shadowBlur = 8;
+      ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+  }
+
+  // ---------- main loop ----------
+  function loop(now){
+    t = now;
+    const w = canvas.width / (Math.min(window.devicePixelRatio||1,2));
+    const h = canvas.height / (Math.min(window.devicePixelRatio||1,2));
+
+    if(hasAudio && analyser){
+      analyser.getByteFrequencyData(freqData);
+      analyser.getByteTimeDomainData(timeData);
+    } else {
+      synthArrays(now);
+    }
+
+    if(mode==='bars') drawBars(w,h);
+    else if(mode==='radial') drawRadial(w,h);
+    else drawParticles(w,h);
+
+    requestAnimationFrame(loop);
+  }
+  updateLabel();
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
