@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drift — a one-button dodge game — Arnav</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fafafa;
+    --ink:#0e0e11;
+    --dim:#88888f;
+    --line:#e3e3e8;
+    --accent:#013220;
+    --accent-tint:#e7efec;
+    --header-bg:rgba(250,250,250,0.85);
+    --contrast-panel:#0e0e11;
+    --body-text:#3a3a41;
+    --font-display:'Space Grotesk', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --ease:cubic-bezier(.16,.8,.24,1);
+  }
+
+  html[data-theme="dark"]{
+    --bg:#0c0e0c;
+    --ink:#f1f3f1;
+    --dim:#8d968f;
+    --line:#242824;
+    --accent:#33cc85;
+    --accent-tint:#122318;
+    --header-bg:rgba(12,14,12,0.85);
+    --body-text:#c7cac8;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  ::selection{ background:var(--accent); color:#fff; }
+
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--font-display);
+    overflow-x:hidden;
+    transition:background .4s var(--ease), color .4s var(--ease);
+  }
+
+  a{ color:inherit; text-decoration:none; }
+
+  .grain{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    opacity:.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  header, .case-hero, .case-cover, .case-section, .proto-cta, footer{ position:relative; z-index:2; }
+
+  .theme-toggle{
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--ink); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:.85rem;
+    transition:border-color .3s var(--ease), transform .3s var(--ease);
+    margin-left:1.4rem;
+  }
+  .theme-toggle:hover{ border-color:var(--dim); transform:rotate(15deg); }
+  .header-right{ display:flex; align-items:center; }
+
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:500;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.6rem 5vw; background:var(--header-bg); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+    transition:background .4s var(--ease);
+  }
+  .logo{ font-weight:700; font-size:1rem; letter-spacing:-.01em; }
+
+  .back-link{
+    font-family:var(--font-mono); font-size:.72rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--dim); position:relative; padding-bottom:2px;
+    display:flex; align-items:center; gap:.5em;
+  }
+  .back-link::after{
+    content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:var(--ink);
+    transition:width .3s var(--ease);
+  }
+  .back-link:hover{ color:var(--ink); }
+  .back-link:hover::after{ width:100%; }
+
+  .case-hero{ padding:9rem 5vw 4rem; }
+  .case-tag{
+    font-family:var(--font-mono); font-size:.72rem; letter-spacing:.15em;
+    color:var(--accent); text-transform:uppercase; margin-bottom:1.4rem;
+  }
+  .case-hero h1{
+    font-weight:700; letter-spacing:-.03em; line-height:.95;
+    font-size:clamp(2.6rem, 8vw, 5.4rem); max-width:900px;
+  }
+  .case-hero p{
+    max-width:560px; margin-top:1.8rem; font-size:1.05rem; line-height:1.7; color:var(--body-text);
+  }
+
+  .case-meta{
+    display:flex; gap:3rem; margin-top:3rem; flex-wrap:wrap;
+    font-family:var(--font-mono); font-size:.72rem; color:var(--dim);
+    border-top:1px solid var(--line); padding-top:2rem;
+  }
+  .case-meta div b{
+    display:block; color:var(--ink); font-family:var(--font-display);
+    font-size:1rem; margin-bottom:.2rem;
+  }
+
+  .case-cover{
+    margin:0 5vw 6rem; border-radius:10px; overflow:hidden;
+    background:#000; aspect-ratio:16/9;
+  }
+  .case-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  .case-section{
+    max-width:760px; margin:0 auto; padding:5rem 5vw;
+    border-top:1px solid var(--line);
+  }
+  .case-section.wide{ max-width:1000px; }
+  .case-section .s-num{
+    font-family:var(--font-mono); font-size:.72rem; color:var(--dim);
+    letter-spacing:.12em; margin-bottom:1.2rem;
+  }
+  .case-section h2{
+    font-size:clamp(1.5rem, 3.4vw, 2.2rem); font-weight:600; letter-spacing:-.02em;
+    margin-bottom:1.4rem;
+  }
+  .case-section h3{
+    font-size:1.05rem; font-weight:600; letter-spacing:-.01em;
+    margin:2.2rem 0 .6rem;
+  }
+  .case-section h3:first-of-type{ margin-top:0; }
+  .case-section p{ font-size:1rem; line-height:1.8; color:var(--body-text); }
+  .case-section p + p{ margin-top:1.1rem; }
+
+  .reveal{ opacity:0; transform:translateY(28px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  /* before/after comparison */
+  .compare{
+    display:grid; grid-template-columns:1fr 1fr; gap:1.4rem; margin-top:2.4rem;
+  }
+  .compare figure{ margin:0; }
+  .compare img{
+    width:100%; border-radius:8px; border:1px solid var(--line); display:block;
+  }
+  .compare figcaption{
+    font-family:var(--font-mono); font-size:.68rem; color:var(--dim);
+    margin-top:.7rem; letter-spacing:.04em; text-transform:uppercase;
+  }
+  .compare .after figcaption{ color:var(--accent); }
+
+  /* decision log */
+  .log-list{ list-style:none; margin-top:2rem; }
+  .log-list li{
+    padding:1.3rem 0; border-top:1px solid var(--line);
+  }
+  .log-list li:first-child{ border-top:none; }
+  .log-list b{ display:block; font-weight:600; margin-bottom:.4rem; }
+  .log-list .why{ font-size:.92rem; color:var(--body-text); line-height:1.6; }
+  .log-list .why::before{ content:'why: '; color:var(--accent); font-family:var(--font-mono); font-size:.78rem; }
+
+  /* code snippets */
+  .code-block{
+    margin-top:1.4rem; background:var(--contrast-panel); border-radius:8px;
+    overflow:hidden;
+  }
+  .code-block .code-label{
+    font-family:var(--font-mono); font-size:.68rem; letter-spacing:.06em;
+    color:#8d968f; padding:.7em 1.2em; border-bottom:1px solid rgba(255,255,255,0.08);
+    text-transform:uppercase;
+  }
+  .code-block pre{
+    margin:0; padding:1.2rem; overflow-x:auto;
+    font-family:var(--font-mono); font-size:.8rem; line-height:1.7; color:#e4e4e8;
+  }
+  .code-block .cm{ color:#7d8a80; }
+  .snippet-note{ font-size:.92rem; color:var(--body-text); line-height:1.7; margin-top:1.6rem; }
+  .snippet-note:first-child{ margin-top:0; }
+
+  .source-link{
+    display:inline-flex; align-items:center; gap:.6em; margin-top:2.4rem;
+    font-family:var(--font-mono); font-size:.78rem; color:var(--dim);
+    border:1px solid var(--line); border-radius:8px; padding:.8em 1.2em;
+    transition:color .3s var(--ease), border-color .3s var(--ease);
+  }
+  .source-link:hover{ color:var(--ink); border-color:var(--dim); }
+
+  .goals-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:1px;
+    background:var(--line); border:1px solid var(--line);
+    margin-top:2rem;
+  }
+  .goal-card{ background:var(--bg); padding:1.8rem; transition:background .3s var(--ease); }
+  .goal-card:hover{ background:var(--accent-tint); }
+  .goal-card b{ display:block; font-size:1rem; font-weight:600; margin-bottom:.5rem; }
+  .goal-card span{ font-size:.85rem; color:var(--dim); line-height:1.6; }
+
+  .takeaways{ list-style:none; margin-top:1.6rem; display:grid; gap:.7rem; }
+  .takeaways li{
+    font-size:.92rem; color:var(--body-text); padding-left:1.5rem; position:relative; line-height:1.6;
+  }
+  .takeaways li::before{
+    content:'→'; position:absolute; left:0; color:var(--accent); font-family:var(--font-mono);
+  }
+
+  .proto-cta{
+    margin:2rem 5vw 8rem; padding:4.5rem 5vw; text-align:center;
+    background:var(--contrast-panel); border-radius:14px; position:relative; overflow:hidden;
+  }
+  .proto-cta h2{
+    color:#fff; font-size:clamp(1.6rem, 4vw, 2.6rem); font-weight:600;
+    letter-spacing:-.02em; margin-bottom:1rem;
+  }
+  .proto-cta p{
+    color:#a5a5ad; font-size:.95rem; max-width:460px; margin:0 auto 2.4rem;
+    line-height:1.6;
+  }
+  .proto-btn{
+    display:inline-flex; align-items:center; gap:.7em;
+    background:var(--accent); color:#fff; font-family:var(--font-display);
+    font-weight:600; font-size:1rem; padding:1em 1.8em; border-radius:999px;
+    position:relative; transition:transform .3s var(--ease), box-shadow .3s var(--ease);
+    box-shadow:0 0 0 0 rgba(1,50,32,0);
+  }
+  .proto-btn:hover{
+    transform:translateY(-3px) scale(1.03);
+    box-shadow:0 14px 30px -8px rgba(1,50,32,0.55);
+  }
+  .proto-btn.pressed{ transform:scale(.94); transition:transform .12s var(--ease); }
+  .proto-btn .arrow-ic{ transition:transform .3s var(--ease); }
+  .proto-btn:hover .arrow-ic{ transform:translate(3px,-3px); }
+
+  footer{
+    padding:2rem 5vw; display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem;
+    font-family:var(--font-mono); font-size:.68rem; color:var(--dim);
+    border-top:1px solid var(--line);
+  }
+
+  @media (max-width:640px){
+    .case-meta{ gap:1.6rem; }
+    .case-section{ padding:3.5rem 6vw; }
+    .goals-grid{ grid-template-columns:1fr; }
+    .compare{ grid-template-columns:1fr; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<header>
+  <div class="logo">Arnav</div>
+  <div class="header-right">
+    <a href="index-minimal.html" class="back-link">← Back to work</a>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">☾</button>
+  </div>
+</header>
+
+<section class="case-hero">
+  <div class="case-tag">Case Study — 03</div>
+  <h1>Drift — One-Button Dodge Game</h1>
+  <p>A small reflex game built to practice game feel — tuning jump physics, difficulty pacing, and feedback until a single button press feels satisfying. Meant as a bridge project before moving into Unity.</p>
+
+  <div class="case-meta">
+    <div><b>Role</b>Designer &amp; Builder</div>
+    <div><b>Duration</b>~4 Days</div>
+    <div><b>Tools</b>Canvas, vanilla JavaScript</div>
+    <div><b>Type</b>Self-directed</div>
+  </div>
+</section>
+
+<div class="case-cover">
+  <img src="dodge-cover.png" alt="Drift game — mid-run gameplay">
+</div>
+
+<div class="case-section reveal">
+  <div class="s-num">01 / Overview</div>
+  <h2>Problem</h2>
+  <p>My first two projects were about screens — layouts, states, static flows. I wanted to try something where the entire "interface" is a single input, repeated fast, and see how much of the design work happens in tuning feel rather than laying anything out.</p>
+  <h3>Goal</h3>
+  <p>Build a one-button dodge game where the core loop — jump, dodge, fail, retry — feels fair and satisfying, not just functional. The mechanic itself (jump over obstacles) is intentionally simple; the actual design problem is making that simple thing feel good.</p>
+</div>
+
+<div class="case-section wide reveal">
+  <div class="s-num">02 / Before &amp; After</div>
+  <h2>Same mechanics, different feel</h2>
+  <p>I built the bare mechanics first — collision detection, gravity, obstacle spawning — with no polish at all, on purpose. That gave me an honest baseline to compare against once I started tuning.</p>
+  <div class="compare">
+    <figure class="before">
+      <img src="before-midgame.png" alt="Rough first version of the game with plain rectangles">
+      <figcaption>Before — bare mechanics, plain shapes, default font</figcaption>
+    </figure>
+    <figure class="after">
+      <img src="after-midgame.png" alt="Polished version with rounded shapes and refined visual identity">
+      <figcaption>After — tuned physics, real visual identity, HUD</figcaption>
+    </figure>
+  </div>
+</div>
+
+<div class="case-section wide reveal">
+  <div class="s-num">03 / Decision Log</div>
+  <h2>What I changed, and why</h2>
+  <ul class="log-list">
+    <li>
+      <b>Asymmetric gravity (falls faster than it rises)</b>
+      <div class="why">the v1 jump used one constant gravity value and felt floaty and unresponsive. Making the fall heavier than the rise reads as snappier without changing the jump height.</div>
+    </li>
+    <li>
+      <b>Squash-and-stretch on takeoff and landing</b>
+      <div class="why">a jump with no deformation felt stiff, even once the physics were right. A quick stretch on takeoff and squash on landing sells weight and impact with almost no extra code.</div>
+    </li>
+    <li>
+      <b>Randomized obstacle gaps with a safety floor</b>
+      <div class="why">fixed-interval spawning in v1 felt like a metronome — predictable in a boring way, not a skillful way. Randomizing the gap (but never below what's survivable at the current speed) keeps it unpredictable without being unfair.</div>
+    </li>
+    <li>
+      <b>Stepped, capped difficulty ramp</b>
+      <div class="why">speed increasing forever eventually makes the game impossible regardless of skill. Capping it means the ceiling is reaction time, not an arbitrary wall.</div>
+    </li>
+    <li>
+      <b>Near-miss particle spark</b>
+      <div class="why">clearing an obstacle by a wide margin and clearing it by a pixel felt identical. A small spark on a close call rewards precision the mechanics don't otherwise acknowledge.</div>
+    </li>
+    <li>
+      <b>Screen shake + particle burst on death</b>
+      <div class="why">the v1 game just froze on collision, which felt like a bug, not an ending. A short shake and burst makes failure read as an event instead of the game silently stopping.</div>
+    </li>
+    <li>
+      <b>Instant restart on the same input as jump</b>
+      <div class="why">any menu or confirmation step between failing and retrying kills momentum in a game this short. Space/click does double duty as jump and restart.</div>
+    </li>
+    <li>
+      <b>Persistent best score</b>
+      <div class="why">a single run has no stakes on its own. Saving your best locally gives every retry a reason to exist beyond "try again."</div>
+    </li>
+  </ul>
+</div>
+
+<div class="case-section wide reveal">
+  <div class="s-num">04 / The Code</div>
+  <h2>A few pieces worth showing</h2>
+  <p class="snippet-note">Most of the "design" in this project happened here, not in Figma — small numeric tweaks tested by playing the result over and over. A couple of the more interesting pieces:</p>
+
+  <p class="snippet-note"><b>Asymmetric gravity</b> — the fall pulls harder than the rise, which is what makes the jump read as snappy instead of floaty:</p>
+  <div class="code-block">
+    <div class="code-label">dodge-game.html</div>
+    <pre>player.vy += player.vy &lt; 0 ? 0.62 : 0.78;
+player.y += player.vy;
+<span class="cm">// rising uses the lighter value, falling uses the heavier one —
+// same jump height, but the descent feels more responsive</span></pre>
+  </div>
+
+  <p class="snippet-note"><b>Near-miss detection</b> — checked the moment an obstacle passes the player, not on every frame, to keep it cheap:</p>
+  <div class="code-block">
+    <div class="code-label">dodge-game.html</div>
+    <pre>if(!o.passed &amp;&amp; o.x+o.w &lt; player.x){
+  o.passed = true;
+  const gap = player.x - (o.x+o.w);
+  if(gap &lt; 26) burst(player.x+player.w/2, player.y+player.h/2, '#ffb199', 6);
+}
+<span class="cm">// a close clearance (under 26px) fires a small spark —
+// purely a feel reward, has no effect on score or difficulty</span></pre>
+  </div>
+
+  <p class="snippet-note"><b>Randomized, safety-floored spawn timing</b> — the part that stopped the game from feeling like a metronome:</p>
+  <div class="code-block">
+    <div class="code-label">dodge-game.html</div>
+    <pre>const minGap = 55 + speed*3;
+nextSpawnAt = frame + minGap + Math.random()*40;
+<span class="cm">// the floor scales with current speed, so gaps never get
+// unfairly tight even as the game speeds up</span></pre>
+  </div>
+
+  <a href="https://github.com/arnavdesigns/portfolio/blob/main/dodge-game.html" target="_blank" rel="noopener" class="source-link">
+    View full source on GitHub ↗
+  </a>
+</div>
+
+<div class="case-section wide reveal">
+  <div class="s-num">05 / Design Goals</div>
+  <h2>What "good feel" meant here</h2>
+  <div class="goals-grid">
+    <div class="goal-card">
+      <b>Fair, not random</b>
+      <span>Difficulty should come from speed and timing, never from an unwinnable obstacle pattern.</span>
+    </div>
+    <div class="goal-card">
+      <b>Forgiving to retry</b>
+      <span>Losing should take you back into a run in under a second — no menus, no friction.</span>
+    </div>
+    <div class="goal-card">
+      <b>Readable at a glance</b>
+      <span>Score, best score, and game state should be understandable without reading anything twice.</span>
+    </div>
+    <div class="goal-card">
+      <b>A visual identity of its own</b>
+      <span>Distinct from my other two projects — warm, minimal, and built around a single accent color instead of borrowing the portfolio's palette.</span>
+    </div>
+  </div>
+</div>
+
+<div class="case-section reveal">
+  <div class="s-num">06 / Reflection</div>
+  <h2>What I learned</h2>
+  <p>Almost none of the actual design work here happened in a design tool — it happened in small numeric tweaks to gravity, timing, and particle counts, then playing the result over and over to see if it felt right. That's a different kind of iteration than I'm used to, and it's exactly the kind of loop I expect to be living in once I move into Unity.</p>
+  <p>I haven't had other people playtest this yet — everything so far is based on my own repeated runs, which is a real limitation. The obvious next step is putting it in front of a few friends and watching where they actually die, rather than guessing from my own play.</p>
+
+  <h3 style="margin-top:2.4rem;">Key Takeaways</h3>
+  <ul class="takeaways">
+    <li>First project where the "design" work was mostly numeric tuning, not layout</li>
+    <li>Learned how small physics choices (asymmetric gravity, squash/stretch) change how fair or responsive something feels</li>
+    <li>Built a full loop — start, fail, retry, persistent score — with zero external libraries</li>
+    <li>Still need real playtesting beyond my own runs before I'd call the difficulty curve done</li>
+  </ul>
+</div>
+
+<div class="proto-cta reveal">
+  <h2>Try it yourself</h2>
+  <p>One button. See how far you get.</p>
+  <a href="dodge-game.html" class="proto-btn" id="protoBtn">
+    Play Drift <span class="arrow-ic">↗</span>
+  </a>
+</div>
+
+<footer>
+  <div>© 2026 Arnav — Interaction Design Student</div>
+  <div>Still learning, still shipping</div>
+</footer>
+
+<script>
+  const root = document.documentElement;
+  const themeToggle = document.getElementById('themeToggle');
+  function applyTheme(theme){
+    root.setAttribute('data-theme', theme);
+    themeToggle.textContent = theme === 'dark' ? '☀' : '☾';
+  }
+  const savedTheme = localStorage.getItem('theme');
+  applyTheme(savedTheme || 'light');
+  themeToggle.addEventListener('click', ()=>{
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('theme', next);
+  });
+
+  const revealEls = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){ entry.target.classList.add('in'); io.unobserve(entry.target); }
+      });
+    }, { threshold:0.12 });
+    revealEls.forEach(el=>io.observe(el));
+  } else {
+    revealEls.forEach(el=>el.classList.add('in'));
+  }
+
+  const protoBtn = document.getElementById('protoBtn');
+  protoBtn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    protoBtn.classList.add('pressed');
+    setTimeout(()=>{ window.location.href = protoBtn.href; }, 140);
+  });
+</script>
+
+</body>
+</html>

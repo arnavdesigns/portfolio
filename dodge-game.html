@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drift — a one-button dodge game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f3ee;
+    --ink:#151414;
+    --dim:#8a8479;
+    --line:#e4ddd1;
+    --player:#ff4d3d;
+    --obstacle:#151414;
+    --font-display:'Space Grotesk', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --ease:cubic-bezier(.16,.8,.24,1);
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--font-display);
+    min-height:100vh; display:flex; flex-direction:column; overflow-x:hidden;
+  }
+  a{ color:inherit; text-decoration:none; }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.4rem 5vw;
+  }
+  .back-link{
+    font-family:var(--font-mono); font-size:.72rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--dim); position:relative; padding-bottom:2px;
+  }
+  .back-link::after{
+    content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:var(--ink);
+    transition:width .3s var(--ease);
+  }
+  .back-link:hover{ color:var(--ink); }
+  .back-link:hover::after{ width:100%; }
+  .title-block{ text-align:right; }
+  .title-block h1{ font-size:.95rem; font-weight:700; letter-spacing:.01em; }
+  .title-block span{ font-family:var(--font-mono); font-size:.62rem; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; }
+
+  main{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:1.4rem; padding:1.5rem 5vw 3rem;
+  }
+
+  .stage-wrap{
+    width:100%; max-width:820px; border-radius:14px; overflow:hidden;
+    border:1px solid var(--line); position:relative;
+    box-shadow:0 30px 60px -30px rgba(20,20,20,0.18);
+  }
+  canvas{ display:block; width:100%; height:auto; background:var(--bg); }
+
+  .hud{
+    position:absolute; top:16px; left:20px; font-family:var(--font-mono);
+    font-size:.78rem; letter-spacing:.04em; color:var(--ink); display:flex; gap:1.4rem;
+  }
+  .hud b{ font-weight:600; }
+  .hud .best{ color:var(--dim); }
+
+  .hint{
+    font-family:var(--font-mono); font-size:.72rem; color:var(--dim);
+    letter-spacing:.06em; text-align:center;
+  }
+  .hint kbd{
+    font-family:var(--font-mono); background:var(--ink); color:var(--bg);
+    padding:.15em .5em; border-radius:4px; font-size:.68rem;
+  }
+
+  footer{
+    padding:1.4rem 5vw; text-align:center; font-family:var(--font-mono);
+    font-size:.64rem; color:var(--dim); letter-spacing:.05em;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    * { animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index-minimal.html" class="back-link">← Back to work</a>
+  <div class="title-block">
+    <h1>Drift</h1>
+    <span>One-Button Dodge</span>
+  </div>
+</header>
+
+<main>
+  <div class="stage-wrap">
+    <div class="hud">
+      <div>SCORE <b id="scoreEl">0</b></div>
+      <div class="best">BEST <b id="bestEl">0</b></div>
+    </div>
+    <canvas id="c" width="820" height="320"></canvas>
+  </div>
+  <div class="hint">Press <kbd>Space</kbd> or click / tap to jump — press again to restart</div>
+</main>
+
+<footer>Built with Canvas + vanilla JS — no libraries, no assets</footer>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('scoreEl');
+const bestEl = document.getElementById('bestEl');
+const W = canvas.width, H = canvas.height;
+const groundY = 250;
+
+let best = parseInt(localStorage.getItem('drift-best') || '0', 10);
+bestEl.textContent = best;
+
+let player, obstacles, particles, frame, score, gameOver, speed, shake, started, nextSpawnAt;
+
+function reset(){
+  player = { x:90, y:groundY-34, w:34, h:34, vy:0, jumping:false, squash:1, tilt:0 };
+  obstacles = [];
+  particles = [];
+  frame = 0;
+  score = 0;
+  gameOver = false;
+  started = false;
+  speed = 5.2;
+  shake = 0;
+  nextSpawnAt = 70;
+}
+reset();
+
+function jump(){
+  if(gameOver){ reset(); return; }
+  started = true;
+  if(!player.jumping){
+    player.vy = -12.6;
+    player.jumping = true;
+    player.squash = 1.25; // stretch on takeoff
+  }
+}
+document.addEventListener('keydown', e=>{ if(e.code==='Space'){ e.preventDefault(); jump(); } });
+canvas.addEventListener('pointerdown', jump);
+
+function spawnObstacle(){
+  const tall = Math.random() > 0.55;
+  const w = tall ? 18 : 26;
+  const h = tall ? 40 : 26;
+  obstacles.push({ x: W+20, y: groundY-h, w, h, passed:false });
+  // randomized gap keeps the rhythm from feeling mechanical, but never
+  // tighter than what's survivable at current speed
+  const minGap = 55 + speed*3;
+  nextSpawnAt = frame + minGap + Math.random()*40;
+}
+
+function burst(x,y,color,count=16){
+  for(let i=0;i<count;i++){
+    const a = Math.random()*Math.PI*2;
+    const v = 2 + Math.random()*4;
+    particles.push({ x,y, vx:Math.cos(a)*v, vy:Math.sin(a)*v, life:1, color });
+  }
+}
+
+function update(){
+  if(!started) return;
+  if(gameOver){
+    particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.25; p.life-=0.02; });
+    particles = particles.filter(p=>p.life>0);
+    return;
+  }
+  frame++;
+
+  if(frame % 480 === 0 && speed < 11) speed += 0.4; // stepped ramp, capped
+
+  if(frame >= nextSpawnAt) spawnObstacle();
+
+  // physics: slightly heavier fall than rise reads as more responsive
+  player.vy += player.vy < 0 ? 0.62 : 0.78;
+  player.y += player.vy;
+  if(player.y > groundY-player.h){
+    if(player.jumping) player.squash = 0.72; // squash on landing
+    player.y = groundY-player.h;
+    player.vy = 0;
+    player.jumping = false;
+  }
+  player.squash += (1-player.squash) * 0.22;
+
+  obstacles.forEach(o=>{
+    o.x -= speed;
+    if(!o.passed && o.x+o.w < player.x){
+      o.passed = true;
+      const gap = player.x - (o.x+o.w);
+      if(gap < 26) burst(player.x+player.w/2, player.y+player.h/2, '#ffb199', 6); // near-miss spark
+    }
+  });
+  obstacles = obstacles.filter(o=> o.x > -40);
+
+  obstacles.forEach(o=>{
+    if(player.x < o.x+o.w && player.x+player.w > o.x && player.y < o.y+o.h && player.y+player.h > o.y){
+      gameOver = true;
+      shake = 14;
+      burst(player.x+player.w/2, player.y+player.h/2, '#ff4d3d', 26);
+      if(score > best){ best = score; localStorage.setItem('drift-best', best); }
+    }
+  });
+
+  score++;
+  scoreEl.textContent = score;
+  bestEl.textContent = best;
+}
+
+function draw(){
+  ctx.save();
+  if(shake > 0){
+    ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+    shake *= 0.85;
+    if(shake < 0.5) shake = 0;
+  }
+
+  ctx.clearRect(-20,-20,W+40,H+40);
+
+  // ground
+  ctx.strokeStyle = '#151414';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
+
+  // player (squash/stretch applied on the y-axis, anchored to its base)
+  const p = player;
+  const baseY = p.y + p.h;
+  const h = p.h / p.squash;
+  const w = p.w * (1 + (1-p.squash)*0.4);
+  ctx.fillStyle = '#ff4d3d';
+  ctx.beginPath();
+  const rx = w/2, ry = h/2, cx = p.x + p.w/2, cy = baseY - ry;
+  ctx.roundRect ? ctx.roundRect(cx-rx, cy-ry, w, h, 7) : ctx.rect(cx-rx, cy-ry, w, h);
+  ctx.fill();
+
+  // obstacles
+  ctx.fillStyle = '#151414';
+  obstacles.forEach(o=>{
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(o.x, o.y, o.w, o.h, 4) : ctx.rect(o.x,o.y,o.w,o.h);
+    ctx.fill();
+  });
+
+  // particles
+  particles.forEach(pt=>{
+    ctx.globalAlpha = Math.max(pt.life, 0);
+    ctx.fillStyle = pt.color;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 3, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+
+  if(!started){
+    ctx.fillStyle = 'rgba(21,20,20,0.86)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#f6f3ee';
+    ctx.textAlign = 'center';
+    ctx.font = '600 22px "Space Grotesk", sans-serif';
+    ctx.fillText('Drift', W/2, H/2 - 12);
+    ctx.font = '13px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#c9c2b3';
+    ctx.fillText('space / click / tap to start', W/2, H/2 + 16);
+    ctx.textAlign = 'left';
+  } else if(gameOver){
+    ctx.fillStyle = 'rgba(21,20,20,0.55)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#f6f3ee';
+    ctx.textAlign = 'center';
+    ctx.font = '600 20px "Space Grotesk", sans-serif';
+    ctx.fillText('run over', W/2, H/2 - 8);
+    ctx.font = '13px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#e4ddd1';
+    ctx.fillText('space / click / tap to try again', W/2, H/2 + 18);
+    ctx.textAlign = 'left';
+  }
+}
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
