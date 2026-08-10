@@ -14,9 +14,25 @@
     --line:#e3e3e8;
     --accent:#013220;
     --accent-tint:#e7efec;
+    --header-bg:rgba(250,250,250,0.85);
+    --contrast-panel:#0e0e11;
+    --particle-rgb:14,14,17;
+    --body-text:#3a3a41;
     --font-display:'Space Grotesk', sans-serif;
     --font-mono:'IBM Plex Mono', monospace;
     --ease:cubic-bezier(.16,.8,.24,1);
+  }
+
+  html[data-theme="dark"]{
+    --bg:#0c0e0c;
+    --ink:#f1f3f1;
+    --dim:#8d968f;
+    --line:#242824;
+    --accent:#33cc85;
+    --accent-tint:#122318;
+    --header-bg:rgba(12,14,12,0.85);
+    --particle-rgb:150,160,152;
+    --body-text:#c7cac8;
   }
 
   *{ margin:0; padding:0; box-sizing:border-box; }
@@ -27,15 +43,37 @@
     background:var(--bg); color:var(--ink);
     font-family:var(--font-display);
     overflow-x:hidden;
+    transition:background .4s var(--ease), color .4s var(--ease);
   }
 
   a{ color:inherit; text-decoration:none; }
+
+  /* ---------- ambient particle background ---------- */
+
+  /* ---------- grain texture ---------- */
+  .grain{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    opacity:.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  header, .hero, section, footer{ position:relative; z-index:2; }
+
+  /* ---------- theme toggle ---------- */
+  .theme-toggle{
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--ink); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:.85rem;
+    transition:border-color .3s var(--ease), transform .3s var(--ease);
+    margin-left:1.6rem;
+  }
+  .theme-toggle:hover{ border-color:var(--dim); transform:rotate(15deg); }
 
   /* ---------- spec readout (signature element) ---------- */
   .spec{
     position:fixed; top:0; left:0; z-index:9999; pointer-events:none;
     font-family:var(--font-mono); font-size:.68rem; letter-spacing:.02em;
-    background:var(--ink); color:#fff; padding:.35em .65em; border-radius:3px;
+    background:var(--contrast-panel); color:#fff; padding:.35em .65em; border-radius:3px;
     opacity:0; transform:translate(-50%, 14px) scale(.9);
     transition:opacity .18s var(--ease), transform .18s var(--ease);
     white-space:nowrap;
@@ -44,17 +82,20 @@
   .spec::before{
     content:''; position:absolute; top:-4px; left:50%; transform:translateX(-50%);
     border-left:4px solid transparent; border-right:4px solid transparent;
-    border-bottom:4px solid var(--ink);
+    border-bottom:4px solid var(--contrast-panel);
   }
 
   /* ---------- nav ---------- */
   header{
     position:fixed; top:0; left:0; right:0; z-index:500;
     display:flex; align-items:center; justify-content:space-between;
-    padding:1.6rem 5vw; background:rgba(250,250,250,0.85); backdrop-filter:blur(8px);
+    padding:1.6rem 5vw; background:var(--header-bg); backdrop-filter:blur(8px);
     border-bottom:1px solid transparent;
+    transition:background .4s var(--ease);
   }
   .logo{ font-weight:700; font-size:1rem; letter-spacing:-.01em; }
+
+  .nav-right{ display:flex; align-items:center; }
 
   nav ul{ list-style:none; display:flex; gap:2.4rem; }
   nav a{
@@ -93,7 +134,7 @@
   }
 
   .hero-desc{
-    max-width:480px; margin-top:2.2rem; font-size:1rem; line-height:1.7; color:#45454c;
+    max-width:480px; margin-top:2.2rem; font-size:1rem; line-height:1.7; color:var(--body-text);
   }
 
   .hero-meta{
@@ -163,7 +204,7 @@
   /* ---------- about ---------- */
   .about-wrap{ display:grid; grid-template-columns:1.1fr 1fr; gap:5rem; }
   @media (max-width:860px){ .about-wrap{ grid-template-columns:1fr; gap:3rem; } }
-  .about-wrap p{ font-size:1.05rem; line-height:1.8; color:#3a3a41; }
+  .about-wrap p{ font-size:1.05rem; line-height:1.8; color:var(--body-text); }
   .about-wrap p + p{ margin-top:1.2rem; }
 
   .principles{ list-style:none; }
@@ -221,17 +262,21 @@
 </head>
 <body>
 
+<div class="grain"></div>
 <div class="spec" id="spec"></div>
 
 <header>
   <div class="logo">Arnav</div>
-  <nav>
-    <ul>
-      <li><a href="#work">Work</a></li>
-      <li><a href="#about">About</a></li>
-      <li><a href="#contact">Contact</a></li>
-    </ul>
-  </nav>
+  <div class="nav-right">
+    <nav>
+      <ul>
+        <li><a href="#work">Work</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">☾</button>
+  </div>
 </header>
 
 <section class="hero">
@@ -241,7 +286,7 @@
   <h1>Small interactions.<br><em>Real intent.</em></h1>
   <p class="hero-desc">I design the moments between action and response — the small mechanics that make software feel considered, honest, and good to use.</p>
   <div class="hero-meta">
-    <div><b>02</b>Practice projects</div>
+    <div><b>03</b>Practice projects</div>
     <div><b>Student</b>Interaction design</div>
     <div><b>Open</b>For feedback &amp; projects</div>
   </div>
@@ -273,6 +318,18 @@
     <div>
       <h3>Sonic — Music Visualizer</h3>
       <p>An interactive, audio-reactive visualizer built with the Web Audio API and Canvas</p>
+    </div>
+    <div class="arrow">↗</div>
+  </a>
+
+  <a href="dodge-case-study.html" class="work-row reveal track" data-spec="view case · playable" id="driftRow">
+    <div class="cover">
+      <img src="dodge-cover.png" alt="Drift one-button dodge game cover">
+    </div>
+    <div class="n">03</div>
+    <div>
+      <h3>Drift — One-Button Dodge Game</h3>
+      <p>A small reflex game built to practice game feel, physics tuning, and feedback</p>
     </div>
     <div class="arrow">↗</div>
   </a>
@@ -325,6 +382,22 @@
 </footer>
 
 <script>
+  // ---------- dark mode ----------
+  const root = document.documentElement;
+  const themeToggle = document.getElementById('themeToggle');
+  function applyTheme(theme){
+    root.setAttribute('data-theme', theme);
+    themeToggle.textContent = theme === 'dark' ? '☀' : '☾';
+  }
+  const savedTheme = localStorage.getItem('theme');
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(savedTheme || 'light');
+  themeToggle.addEventListener('click', ()=>{
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('theme', next);
+  });
+
   // spec readout follows cursor near interactive elements
   const spec = document.getElementById('spec');
 
@@ -381,6 +454,17 @@
       sonicRow.classList.add('pressed');
       setTimeout(() => {
         window.location.href = sonicRow.href;
+      }, 140);
+    });
+  }
+
+  const driftRow = document.getElementById('driftRow');
+  if (driftRow) {
+    driftRow.addEventListener('click', (e) => {
+      e.preventDefault();
+      driftRow.classList.add('pressed');
+      setTimeout(() => {
+        window.location.href = driftRow.href;
       }, 140);
     });
   }
