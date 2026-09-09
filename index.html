@@ -286,7 +286,7 @@
   <h1>Small interactions.<br><em>Real intent.</em></h1>
   <p class="hero-desc">I design the moments between action and response — the small mechanics that make software feel considered, honest, and good to use.</p>
   <div class="hero-meta">
-    <div><b>03</b>Practice projects</div>
+    <div><b>04</b>Practice projects</div>
     <div><b>Student</b>Interaction design</div>
     <div><b>Open</b>For feedback &amp; projects</div>
   </div>
@@ -330,6 +330,18 @@
     <div>
       <h3>Drift — One-Button Dodge Game</h3>
       <p>A small reflex game built to practice game feel, physics tuning, and feedback</p>
+    </div>
+    <div class="arrow">↗</div>
+  </a>
+
+  <a href="donut-case-study.html" class="work-row reveal track" data-spec="view case · animation study" id="donutRow">
+    <div class="cover">
+      <img src="donut-cover.png" alt="Donut flavor-switching landing page cover">
+    </div>
+    <div class="n">04</div>
+    <div>
+      <h3>Donut — Flavor-Switching Animation Study</h3>
+      <p>A Figma animation experiment where selecting a flavor re-themes the entire page</p>
     </div>
     <div class="arrow">↗</div>
   </a>
@@ -465,6 +477,17 @@
       driftRow.classList.add('pressed');
       setTimeout(() => {
         window.location.href = driftRow.href;
+      }, 140);
+    });
+  }
+
+  const donutRow = document.getElementById('donutRow');
+  if (donutRow) {
+    donutRow.addEventListener('click', (e) => {
+      e.preventDefault();
+      donutRow.classList.add('pressed');
+      setTimeout(() => {
+        window.location.href = donutRow.href;
       }, 140);
     });
   }
