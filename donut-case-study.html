@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donut — a flavor-switching animation study — Arnav</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fafafa;
+    --ink:#0e0e11;
+    --dim:#88888f;
+    --line:#e3e3e8;
+    --accent:#013220;
+    --accent-tint:#e7efec;
+    --header-bg:rgba(250,250,250,0.85);
+    --contrast-panel:#0e0e11;
+    --body-text:#3a3a41;
+    --font-display:'Space Grotesk', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --ease:cubic-bezier(.16,.8,.24,1);
+  }
+
+  html[data-theme="dark"]{
+    --bg:#0c0e0c;
+    --ink:#f1f3f1;
+    --dim:#8d968f;
+    --line:#242824;
+    --accent:#33cc85;
+    --accent-tint:#122318;
+    --header-bg:rgba(12,14,12,0.85);
+    --body-text:#c7cac8;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  ::selection{ background:var(--accent); color:#fff; }
+
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--font-display);
+    overflow-x:hidden;
+    transition:background .4s var(--ease), color .4s var(--ease);
+  }
+
+  a{ color:inherit; text-decoration:none; }
+
+  .grain{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    opacity:.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  header, .case-hero, .case-cover, .case-section, .proto-cta, footer{ position:relative; z-index:2; }
+
+  .theme-toggle{
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--ink); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:.85rem;
+    transition:border-color .3s var(--ease), transform .3s var(--ease);
+    margin-left:1.4rem;
+  }
+  .theme-toggle:hover{ border-color:var(--dim); transform:rotate(15deg); }
+  .header-right{ display:flex; align-items:center; }
+
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:500;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.6rem 5vw; background:var(--header-bg); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+    transition:background .4s var(--ease);
+  }
+  .logo{ font-weight:700; font-size:1rem; letter-spacing:-.01em; }
+
+  .back-link{
+    font-family:var(--font-mono); font-size:.72rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--dim); position:relative; padding-bottom:2px;
+    display:flex; align-items:center; gap:.5em;
+  }
+  .back-link::after{
+    content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:var(--ink);
+    transition:width .3s var(--ease);
+  }
+  .back-link:hover{ color:var(--ink); }
+  .back-link:hover::after{ width:100%; }
+
+  .case-hero{ padding:9rem 5vw 4rem; }
+  .case-tag{
+    font-family:var(--font-mono); font-size:.72rem; letter-spacing:.15em;
+    color:var(--accent); text-transform:uppercase; margin-bottom:1.4rem;
+  }
+  .case-hero h1{
+    font-weight:700; letter-spacing:-.03em; line-height:.95;
+    font-size:clamp(2.6rem, 8vw, 5.4rem); max-width:900px;
+  }
+  .case-hero p{
+    max-width:560px; margin-top:1.8rem; font-size:1.05rem; line-height:1.7; color:var(--body-text);
+  }
+
+  .case-meta{
+    display:flex; gap:3rem; margin-top:3rem; flex-wrap:wrap;
+    font-family:var(--font-mono); font-size:.72rem; color:var(--dim);
+    border-top:1px solid var(--line); padding-top:2rem;
+  }
+  .case-meta div b{
+    display:block; color:var(--ink); font-family:var(--font-display);
+    font-size:1rem; margin-bottom:.2rem;
+  }
+
+  .case-cover{
+    margin:0 5vw 6rem; border-radius:10px; overflow:hidden;
+    background:#000; aspect-ratio:16/9;
+  }
+  .case-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  .case-section{
+    max-width:760px; margin:0 auto; padding:5rem 5vw;
+    border-top:1px solid var(--line);
+  }
+  .case-section.wide{ max-width:1000px; }
+  .case-section .s-num{
+    font-family:var(--font-mono); font-size:.72rem; color:var(--dim);
+    letter-spacing:.12em; margin-bottom:1.2rem;
+  }
+  .case-section h2{
+    font-size:clamp(1.5rem, 3.4vw, 2.2rem); font-weight:600; letter-spacing:-.02em;
+    margin-bottom:1.4rem;
+  }
+  .case-section h3{
+    font-size:1.05rem; font-weight:600; letter-spacing:-.01em;
+    margin:2.2rem 0 .6rem;
+  }
+  .case-section h3:first-of-type{ margin-top:0; }
+  .case-section p{ font-size:1rem; line-height:1.8; color:var(--body-text); }
+  .case-section p + p{ margin-top:1.1rem; }
+
+  .reveal{ opacity:0; transform:translateY(28px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  /* flavor gallery */
+  .flavor-gallery{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.4rem; margin-top:2.4rem;
+  }
+  .flavor-item img{
+    width:100%; border-radius:8px; border:1px solid var(--line); display:block;
+    transition:transform .4s var(--ease), box-shadow .4s var(--ease);
+  }
+  .flavor-item img:hover{
+    transform:translateY(-6px); box-shadow:0 16px 30px -12px rgba(14,14,17,0.25);
+  }
+  .flavor-item .case-img-caption{
+    font-family:var(--font-mono); font-size:.68rem; color:var(--dim);
+    margin-top:.8rem; text-align:center; letter-spacing:.04em; text-transform:uppercase;
+  }
+
+  .goals-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:1px;
+    background:var(--line); border:1px solid var(--line);
+    margin-top:2rem;
+  }
+  .goal-card{ background:var(--bg); padding:1.8rem; transition:background .3s var(--ease); }
+  .goal-card:hover{ background:var(--accent-tint); }
+  .goal-card b{ display:block; font-size:1rem; font-weight:600; margin-bottom:.5rem; }
+  .goal-card span{ font-size:.85rem; color:var(--dim); line-height:1.6; }
+
+  .takeaways{ list-style:none; margin-top:1.6rem; display:grid; gap:.7rem; }
+  .takeaways li{
+    font-size:.92rem; color:var(--body-text); padding-left:1.5rem; position:relative; line-height:1.6;
+  }
+  .takeaways li::before{
+    content:'→'; position:absolute; left:0; color:var(--accent); font-family:var(--font-mono);
+  }
+
+  .proto-cta{
+    margin:2rem 5vw 8rem; padding:4.5rem 5vw; text-align:center;
+    background:var(--contrast-panel); border-radius:14px; position:relative; overflow:hidden;
+  }
+  .proto-cta h2{
+    color:#fff; font-size:clamp(1.6rem, 4vw, 2.6rem); font-weight:600;
+    letter-spacing:-.02em; margin-bottom:1rem;
+  }
+  .proto-cta p{
+    color:#a5a5ad; font-size:.95rem; max-width:460px; margin:0 auto 2.4rem;
+    line-height:1.6;
+  }
+  .proto-btn{
+    display:inline-flex; align-items:center; gap:.7em;
+    background:var(--accent); color:#fff; font-family:var(--font-display);
+    font-weight:600; font-size:1rem; padding:1em 1.8em; border-radius:999px;
+    position:relative; transition:transform .3s var(--ease), box-shadow .3s var(--ease);
+    box-shadow:0 0 0 0 rgba(1,50,32,0);
+  }
+  .proto-btn:hover{
+    transform:translateY(-3px) scale(1.03);
+    box-shadow:0 14px 30px -8px rgba(1,50,32,0.55);
+  }
+  .proto-btn.pressed{ transform:scale(.94); transition:transform .12s var(--ease); }
+  .proto-btn .arrow-ic{ transition:transform .3s var(--ease); }
+  .proto-btn:hover .arrow-ic{ transform:translate(3px,-3px); }
+
+  footer{
+    padding:2rem 5vw; display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem;
+    font-family:var(--font-mono); font-size:.68rem; color:var(--dim);
+    border-top:1px solid var(--line);
+  }
+
+  @media (max-width:640px){
+    .case-meta{ gap:1.6rem; }
+    .case-section{ padding:3.5rem 6vw; }
+    .goals-grid{ grid-template-columns:1fr; }
+    .flavor-gallery{ grid-template-columns:1fr; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<header>
+  <div class="logo">Arnav</div>
+  <div class="header-right">
+    <a href="index-minimal.html" class="back-link">← Back to work</a>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">☾</button>
+  </div>
+</header>
+
+<section class="case-hero">
+  <div class="case-tag">Case Study — 04</div>
+  <h1>Donut — A Flavor-Switching Animation Study</h1>
+  <p>A small experiment built to practice animation and color work in Figma — not a full UX project, just a landing page concept where picking a flavor completely re-skins the page.</p>
+
+  <div class="case-meta">
+    <div><b>Role</b>UI/UX Designer</div>
+    <div><b>Duration</b>A few hours</div>
+    <div><b>Tools</b>Figma</div>
+    <div><b>Type</b>Personal experiment</div>
+  </div>
+</section>
+
+<div class="case-cover">
+  <img src="donut-cover.png" alt="Donut landing page — strawberry flavor theme">
+</div>
+
+<div class="case-section reveal">
+  <div class="s-num">01 / Overview</div>
+  <h2>What this actually is</h2>
+  <p>This one didn't start from a problem — it started from wanting to get better at Figma's animation tools. A donut shop landing page was just a fun, colorful excuse to practice, not a real business or a research-backed UX problem. I think it's worth including anyway, because the animation work turned out genuinely well and it's a different skill than the case-study-style projects elsewhere in this portfolio.</p>
+  <h3>Goal</h3>
+  <p>Design one consistent landing page layout, then build three fully re-themed states — blueberry, chocolate, and strawberry — where selecting a flavor swatch smoothly transitions the whole page: colors, the hero donut, and the floating accent elements around it.</p>
+</div>
+
+<div class="case-section wide reveal">
+  <div class="s-num">02 / The Three States</div>
+  <h2>Same layout, three moods</h2>
+  <p>Every version keeps the exact same structure — nav, headline, subheading, two buttons, three flavor swatches — but the color palette, hero illustration, and floating accents (berries, chocolate pieces, leaves) all change together depending on which flavor is selected.</p>
+  <div class="flavor-gallery">
+    <div class="flavor-item">
+      <img src="donut-strawberry.png" alt="Strawberry flavor theme">
+      <div class="case-img-caption">Strawberry</div>
+    </div>
+    <div class="flavor-item">
+      <img src="donut-blueberry.png" alt="Blueberry flavor theme">
+      <div class="case-img-caption">Blueberry</div>
+    </div>
+    <div class="flavor-item">
+      <img src="donut-chocolate.png" alt="Chocolate flavor theme">
+      <div class="case-img-caption">Chocolate</div>
+    </div>
+  </div>
+</div>
+
+<div class="case-section wide reveal">
+  <div class="s-num">03 / Design Goals</div>
+  <h2>What I was actually practicing</h2>
+  <div class="goals-grid">
+    <div class="goal-card">
+      <b>Smooth state transitions</b>
+      <span>Getting comfortable with Smart Animate across states that change color, imagery, and layout elements all at once.</span>
+    </div>
+    <div class="goal-card">
+      <b>Cohesive color systems</b>
+      <span>Building three full palettes (background, buttons, accents) that each feel intentional, not just a hue-shifted copy of the others.</span>
+    </div>
+    <div class="goal-card">
+      <b>Consistent structure under change</b>
+      <span>Keeping layout and hierarchy identical across states, so the only thing that reads as "different" is mood, not structure.</span>
+    </div>
+    <div class="goal-card">
+      <b>Playful, tactile feel</b>
+      <span>Making flavor selection feel satisfying to click through, not just a static color swap.</span>
+    </div>
+  </div>
+</div>
+
+<div class="case-section reveal">
+  <div class="s-num">04 / Reflection</div>
+  <h2>What I learned</h2>
+  <p>This was mostly about spending real time inside Figma's animation and prototyping tools instead of just designing static screens. Building three distinct-but-consistent themes was a good excuse to think more carefully about color palettes than I usually do, and figuring out how to make a flavor swap feel smooth rather than jarring taught me more about transition timing than any single case study screen would have.</p>
+  <p>I'm keeping this honest: it's a small, self-directed experiment, not a research-backed case study. I think it still belongs here because the craft and animation work is something the other projects don't really show.</p>
+
+  <h3 style="margin-top:2.4rem;">Key Takeaways</h3>
+  <ul class="takeaways">
+    <li>Practiced Smart Animate across multi-element state changes, not just single-object transitions</li>
+    <li>Built three cohesive color palettes around one consistent layout</li>
+    <li>Learned that a good transition matters as much as the states it connects</li>
+  </ul>
+</div>
+
+<div class="proto-cta reveal">
+  <h2>Try it yourself</h2>
+  <p>Click through the flavors in the interactive Figma prototype.</p>
+  <a href="https://www.figma.com/proto/sLM3TxekdXegsI8g0AHLTr/Donut-website-ui-design?node-id=29-2&p=f&viewport=-1279%2C-19%2C0.26&t=x46WdTVm6TJdJbEC-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=29%3A2&page-id=0%3A1" target="_blank" rel="noopener" class="proto-btn" id="protoBtn">
+    Open prototype <span class="arrow-ic">↗</span>
+  </a>
+</div>
+
+<footer>
+  <div>© 2026 Arnav — Interaction Design Student</div>
+  <div>Still learning, still shipping</div>
+</footer>
+
+<script>
+  const root = document.documentElement;
+  const themeToggle = document.getElementById('themeToggle');
+  function applyTheme(theme){
+    root.setAttribute('data-theme', theme);
+    themeToggle.textContent = theme === 'dark' ? '☀' : '☾';
+  }
+  const savedTheme = localStorage.getItem('theme');
+  applyTheme(savedTheme || 'light');
+  themeToggle.addEventListener('click', ()=>{
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('theme', next);
+  });
+
+  const revealEls = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){ entry.target.classList.add('in'); io.unobserve(entry.target); }
+      });
+    }, { threshold:0.12 });
+    revealEls.forEach(el=>io.observe(el));
+  } else {
+    revealEls.forEach(el=>el.classList.add('in'));
+  }
+
+  const protoBtn = document.getElementById('protoBtn');
+  protoBtn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    protoBtn.classList.add('pressed');
+    setTimeout(()=>{
+      window.open(protoBtn.href, '_blank', 'noopener');
+      protoBtn.classList.remove('pressed');
+    }, 140);
+  });
+</script>
+
+</body>
+</html>
